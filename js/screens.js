@@ -1,7 +1,7 @@
 // Renderizado
 function render() {
   const root = document.getElementById('root');
-
+  
   if (state.screen === 'main') {
     root.innerHTML = renderMain();
   } else if (state.screen === 'registrar') {
@@ -15,7 +15,7 @@ function render() {
   } else if (state.screen === 'sincronizacion') {
     root.innerHTML = renderSincronizacion();
   }
-
+  
   attachEventListeners();
 }
 
@@ -26,8 +26,9 @@ function renderMain() {
     const days = getDaysUntilExpiry(r.caducidad);
     return days <= 2 && days >= 0;
   }).length;
-  const racionesCaducadas = state.raciones.filter(r => getDaysUntilExpiry(r.caducidad) < 0).length;
-
+  const racionesCaducadas = state.raciones.filter(r => getDaysUntilExpiry(r
+    .caducidad) < 0).length;
+  
   // Calcular datos para gráfico
   const counts = {};
   state.raciones.forEach(r => {
@@ -35,7 +36,7 @@ function renderMain() {
   });
   const chartData = Object.entries(counts);
   const maxCount = Math.max(...Object.values(counts), 1);
-
+  
   return `
     <div style="min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px;">
       <div style="max-width: 800px; margin: 0 auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
@@ -148,9 +149,10 @@ function renderRegistrar() {
 function renderConsumir() {
   const counts = {};
   TIPOS_RACIONES.forEach(config => {
-    counts[config.tipo] = state.raciones.filter(r => r.tipo === config.tipo).length;
+    counts[config.tipo] = state.raciones.filter(r => r.tipo === config.tipo)
+      .length;
   });
-
+  
   return `
     <div style="min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px;">
       <div style="max-width: 800px; margin: 0 auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
@@ -236,7 +238,7 @@ function renderVer() {
     if (!racionesPorTipo[r.tipo]) racionesPorTipo[r.tipo] = [];
     racionesPorTipo[r.tipo].push(r);
   });
-
+  
   Object.keys(racionesPorTipo).forEach(tipo => {
     racionesPorTipo[tipo].sort((a, b) => {
       const dateA = parseDate(a.caducidad);
@@ -244,7 +246,7 @@ function renderVer() {
       return dateA.getTime() - dateB.getTime();
     });
   });
-
+  
   return `
     <div style="min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px;">
       <div style="max-width: 800px; margin: 0 auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); margin-bottom: ${state.selectedRacionToEdit ? '100px' : '0'};">
@@ -334,7 +336,7 @@ function renderVer() {
 
 function renderHistorico() {
   const historicoAgrupado = {};
-
+  
   // Agrupar entradas por fecha
   state.racionesHistorico.forEach(entry => {
     if (!historicoAgrupado[entry.fecha]) {
@@ -342,14 +344,14 @@ function renderHistorico() {
     }
     historicoAgrupado[entry.fecha].push(entry);
   });
-
+  
   // Obtener fechas ordenadas (más recientes primero)
   const fechasOrdenadas = Object.keys(historicoAgrupado).sort((a, b) => {
     const dateA = parseDate(a);
     const dateB = parseDate(b);
     return dateB.getTime() - dateA.getTime();
   });
-
+  
   // Iconos y colores para cada tipo de operación
   const tipoConfig = {
     'añadir': { icono: '➕', color: '#4CAF50', label: 'Añadido' },
@@ -357,7 +359,7 @@ function renderHistorico() {
     'modificar': { icono: '✏️', color: '#FF9800', label: 'Modificado' },
     'eliminar': { icono: '🗑️', color: '#F44336', label: 'Eliminado' },
   };
-
+  
   return `
     <div style="min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px;">
       <div style="max-width: 800px; margin: 0 auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
@@ -433,8 +435,9 @@ function renderHistorico() {
 }
 
 function renderSincronizacion() {
-  const isConfigured = typeof isSupabaseConfigured === 'function' && isSupabaseConfigured();
-
+  const isConfigured = typeof isSupabaseConfigured === 'function' &&
+    isSupabaseConfigured();
+  
   return `
     <div style="min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px;">
       <div style="max-width: 800px; margin: 0 auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
@@ -443,17 +446,7 @@ function renderSincronizacion() {
 
         ${!isConfigured ? `
           <div style="padding: 20px; background: #fff4e0; border-left: 4px solid #ff9800; border-radius: 10px; margin-bottom: 25px;">
-            <div style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 10px;">⚠️ Configuración requerida</div>
-            <div style="font-size: 14px; color: #666; line-height: 1.6;">
-              Para habilitar la sincronización, necesitas configurar Supabase:
-              <ol style="margin: 10px 0; padding-left: 20px;">
-                <li>Crea una cuenta gratis en <a href="https://supabase.com" target="_blank" style="color: #667eea;">supabase.com</a></li>
-                <li>Crea un nuevo proyecto</li>
-                <li>Ve a Settings → API</li>
-                <li>Copia la URL y la clave anónima</li>
-                <li>Pégalas en <code style="background: #f0f0f0; padding: 2px 6px; border-radius: 4px;">js/supabase.js</code></li>
-                <li>Crea la tabla ejecutando el SQL que te proporcionaré</li>
-              </ol>
+            <div style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 10px;">⚠️ Configuración requerida
             </div>
           </div>
         ` : ''}
@@ -467,7 +460,7 @@ function renderSincronizacion() {
               ${state.syncCode}
             </div>
             <div style="font-size: 13px; color: #666; text-align: center; margin-bottom: 15px;">
-              Comparte este código con tu familia para que vean las mismas raciones
+              Comparte este código con tu familia para que vean la misma despensa
             </div>
             <button onclick="copiarCodigo()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 10px;">
               📋 Copiar código
@@ -492,36 +485,36 @@ function renderSincronizacion() {
           </div>
 
           <div style="display: grid; gap: 15px;">
-            <div style="padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
-              <div style="font-size: 18px; font-weight: 600; margin-bottom: 10px;">🆕 Crear nuevo código</div>
-              <div style="font-size: 14px; opacity: 0.95; margin-bottom: 15px;">
-                Genera un código único para tu familia. Tus datos actuales se subirán automáticamente.
-              </div>
-              <button onclick="crearNuevoCodigo()" ${!isConfigured ? 'disabled' : ''} style="width: 100%; padding: 12px; background: white; color: #667eea; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: ${!isConfigured ? 'not-allowed' : 'pointer'}; opacity: ${!isConfigured ? '0.5' : '1'};">
-                Generar código
-              </button>
-            </div>
+  <div style="padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; max-width: 100%; box-sizing: border-box;">
+    <div style="font-size: 18px; font-weight: 600; margin-bottom: 10px; word-wrap: break-word;">🆕 Crear nuevo código</div>
+    <div style="font-size: 14px; opacity: 0.95; margin-bottom: 15px; word-wrap: break-word; line-height: 1.4;">
+      Genera un código único para tu familia. Tus datos actuales se subirán automáticamente.
+    </div>
+    <button onclick="crearNuevoCodigo()" ${!isConfigured ? 'disabled' : ''} style="width: 100%; max-width: 100%; padding: 12px; background: white; color: #667eea; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: ${!isConfigured ? 'not-allowed' : 'pointer'}; opacity: ${!isConfigured ? '0.5' : '1'}; box-sizing: border-box;">
+      Generar código
+    </button>
+  </div>
+</div>
 
-            <div style="padding: 20px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 12px; color: white;">
-              <div style="font-size: 18px; font-weight: 600; margin-bottom: 10px;">🔗 Conectar con código existente</div>
-              <div style="font-size: 14px; opacity: 0.95; margin-bottom: 15px;">
-                ¿Ya tienes un código? Introdúcelo para sincronizar con otros dispositivos.
-              </div>
-              <div style="display: flex; gap: 10px;">
-                <input
-                  id="codigo-input"
-                  type="text"
-                  placeholder="DESPENSA-ABC12345"
-                  ${!isConfigured ? 'disabled' : ''}
-                  style="flex: 1; padding: 12px; border: 2px solid white; border-radius: 8px; font-size: 15px; font-family: monospace; text-transform: uppercase;"
-                  onkeypress="if(event.key==='Enter') conectarConCodigoExistente()"
-                >
-                <button onclick="conectarConCodigoExistente()" ${!isConfigured ? 'disabled' : ''} style="padding: 12px 20px; background: white; color: #4facfe; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: ${!isConfigured ? 'not-allowed' : 'pointer'}; opacity: ${!isConfigured ? '0.5' : '1'};">
-                  Conectar
-                </button>
-              </div>
-            </div>
-          </div>
+            <div style="padding: 20px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 12px; color: white; max-width: 100%; box-sizing: border-box;">
+  <div style="font-size: 18px; font-weight: 600; margin-bottom: 10px; word-wrap: break-word;">🔗 Conectar con código existente</div>
+  <div style="font-size: 14px; opacity: 0.95; margin-bottom: 15px; word-wrap: break-word; line-height: 1.4;">
+    ¿Ya tienes un código? Introdúcelo para sincronizar con otros dispositivos.
+  </div>
+  <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+    <input
+      id="codigo-input"
+      type="text"
+      placeholder="DESPENSA-ABC12345"
+      ${!isConfigured ? 'disabled' : ''}
+      style="flex: 1; min-width: 0; padding: 12px; border: 2px solid white; border-radius: 8px; font-size: 15px; font-family: monospace; text-transform: uppercase; box-sizing: border-box;"
+      onkeypress="if(event.key==='Enter') conectarConCodigoExistente()"
+    >
+    <button onclick="conectarConCodigoExistente()" ${!isConfigured ? 'disabled' : ''} style="padding: 12px 20px; background: white; color: #4facfe; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: ${!isConfigured ? 'not-allowed' : 'pointer'}; opacity: ${!isConfigured ? '0.5' : '1'}; white-space: nowrap; box-sizing: border-box;">
+      Conectar
+    </button>
+  </div>
+</div>
         `}
 
         ${isConfigured ? `
