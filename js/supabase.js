@@ -78,7 +78,7 @@ async function conectarConCodigo(codigo) {
   return data;
 }
 
-// Sincronizar datos locales con Supabase
+// Sincronizar datos locales CON Supabase (SUBIR datos)
 async function sincronizarConSupabase(codigo) {
   if (!initSupabase()) {
     return false;
@@ -106,11 +106,54 @@ async function sincronizarConSupabase(codigo) {
   return true;
 }
 
+// Sincronizar datos DESDE Supabase (DESCARGAR datos)
+async function sincronizarDesdeSupabase(codigo) {
+  if (!initSupabase()) {
+    return false;
+  }
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('despensas')
+      .select('*')
+      .eq('codigo', codigo)
+      .single();
+
+    if (error) {
+      console.error('Error descargando datos:', error);
+      return false;
+    }
+
+    // Verificar si hay cambios antes de actualizar
+    const localTimestamp = localStorage.getItem('last_update_timestamp');
+    const remoteTimestamp = data.updated_at;
+
+    if (remoteTimestamp !== localTimestamp) {
+      console.log('📥 Sincronizando datos desde servidor...');
+      state.raciones = data.raciones || [];
+      state.racionesHistorico = data.historico || [];
+
+      // Actualizar localStorage y timestamp
+      saveDataLocal(state.raciones, state.racionesHistorico);
+      localStorage.setItem('last_update_timestamp', remoteTimestamp);
+
+      return true;
+    }
+
+    return false; // No hubo cambios
+  } catch (err) {
+    console.error('Error en sincronizarDesdeSupabase:', err);
+    return false;
+  }
+}
+
 // Suscribirse a cambios en tiempo real
 function suscribirseACambios(codigo) {
   if (!initSupabase()) {
     return null;
   }
+
+  console.log('🔄 Suscribiéndose a cambios en tiempo real para código:', codigo);
 
   const channel = supabaseClient
     .channel('despensa-changes')
@@ -123,24 +166,33 @@ function suscribirseACambios(codigo) {
         filter: `codigo=eq.${codigo}`,
       },
       (payload) => {
+        console.log('📡 Evento Realtime recibido:', payload);
+
         // Solo actualizar si el cambio viene de otro dispositivo
         const localTimestamp = localStorage.getItem('last_update_timestamp');
         const remoteTimestamp = payload.new.updated_at;
 
+        console.log('Timestamps - Local:', localTimestamp, 'Remoto:', remoteTimestamp);
+
         if (remoteTimestamp !== localTimestamp) {
-          console.log('📥 Recibiendo cambios de otro dispositivo...');
+          console.log('📥 Aplicando cambios de otro dispositivo...');
           state.raciones = payload.new.raciones || [];
           state.racionesHistorico = payload.new.historico || [];
 
-          // Actualizar localStorage
+          // Actualizar localStorage y timestamp
           saveDataLocal(state.raciones, state.racionesHistorico);
+          localStorage.setItem('last_update_timestamp', remoteTimestamp);
 
           // Re-renderizar
           render();
+        } else {
+          console.log('⏭️ Cambio ignorado (mismo timestamp = cambio local)');
         }
       }
     )
-    .subscribe();
+    .subscribe((status) => {
+      console.log('📡 Estado de suscripción Realtime:', status);
+    });
 
   return channel;
 }

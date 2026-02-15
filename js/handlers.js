@@ -21,7 +21,7 @@ function addHistoricoEntry(tipo, racion, cambios = null) {
   state.racionesHistorico.unshift(entry); // Añadir al principio para mostrar los más recientes primero
 }
 
-function goToScreen(screen) {
+async function goToScreen(screen) {
   state.screen = screen;
   state.panelExpanded = false;
   state.showPopup = false;
@@ -32,6 +32,12 @@ function goToScreen(screen) {
   } else if (screen === 'consumir') {
     state.selectedRaciones = [];
   }
+
+  // Refrescar datos desde Supabase al volver a main, ver o historico
+  if ((screen === 'main' || screen === 'ver' || screen === 'historico') && typeof refreshDataFromSupabase === 'function') {
+    await refreshDataFromSupabase();
+  }
+
   render();
 }
 
