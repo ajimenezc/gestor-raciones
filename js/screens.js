@@ -327,12 +327,100 @@ function renderVer() {
 }
 
 function renderHistorico() {
+  const historicoAgrupado = {};
+
+  // Agrupar entradas por fecha
+  state.racionesHistorico.forEach(entry => {
+    if (!historicoAgrupado[entry.fecha]) {
+      historicoAgrupado[entry.fecha] = [];
+    }
+    historicoAgrupado[entry.fecha].push(entry);
+  });
+
+  // Obtener fechas ordenadas (más recientes primero)
+  const fechasOrdenadas = Object.keys(historicoAgrupado).sort((a, b) => {
+    const dateA = parseDate(a);
+    const dateB = parseDate(b);
+    return dateB.getTime() - dateA.getTime();
+  });
+
+  // Iconos y colores para cada tipo de operación
+  const tipoConfig = {
+    'añadir': { icono: '➕', color: '#4CAF50', label: 'Añadido' },
+    'consumir': { icono: '🍴', color: '#2196F3', label: 'Consumido' },
+    'modificar': { icono: '✏️', color: '#FF9800', label: 'Modificado' },
+    'eliminar': { icono: '🗑️', color: '#F44336', label: 'Eliminado' },
+  };
+
   return `
     <div style="min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px;">
       <div style="max-width: 800px; margin: 0 auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
         <button onclick="goToScreen('main')" style="background: #f0f0f0; border: none; padding: 10px 20px; border-radius: 10px; font-size: 16px; cursor: pointer; margin-bottom: 15px; font-weight: 600; color: #555;">← Volver</button>
-        <h2 style="font-size: 26px; font-weight: bold; color: #333; margin-bottom: 25px; margin-top: 10px;">📊 Histórico</h2>
-        <p style="text-align: center; padding: 60px 20px; color: #999; font-size: 16px;">Esta funcionalidad se implementará más tarde</p>
+        <h2 style="font-size: 26px; font-weight: bold; color: #333; margin-bottom: 25px; margin-top: 10px;">📊 Histórico de Operaciones</h2>
+
+        ${state.racionesHistorico.length === 0
+          ? '<div style="text-align: center; padding: 60px 20px; color: #999; font-size: 16px;">No hay operaciones registradas todavía</div>'
+          : `
+            <div style="margin-bottom: 20px; padding: 15px; background: #f0f4ff; border-radius: 10px; text-align: center;">
+              <div style="font-size: 14px; color: #666;">Total de operaciones: <strong>${state.racionesHistorico.length}</strong></div>
+            </div>
+
+            <div style="max-height: 600px; overflow-y: auto; padding-right: 10px;">
+              ${fechasOrdenadas.map(fecha => `
+                <div style="margin-bottom: 30px;">
+                  <h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #667eea; display: flex; align-items: center;">
+                    📅 ${fecha}
+                    <span style="font-size: 14px; font-weight: normal; color: #666; margin-left: 10px;">(${historicoAgrupado[fecha].length} operaciones)</span>
+                  </h3>
+
+                  <div style="display: grid; gap: 12px;">
+                    ${historicoAgrupado[fecha].map(entry => {
+                      const config = tipoConfig[entry.tipo];
+                      const tipoRacionConfig = TIPOS_RACIONES.find(t => t.tipo === entry.racion.tipo);
+
+                      return `
+                        <div style="padding: 15px; background: #f9f9f9; border-radius: 10px; border-left: 4px solid ${config.color};">
+                          <div style="display: flex; align-items: flex-start; gap: 12px;">
+                            <div style="font-size: 24px; flex-shrink: 0;">${config.icono}</div>
+                            <div style="flex: 1;">
+                              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <span style="font-size: 12px; font-weight: 600; color: white; background: ${config.color}; padding: 4px 10px; border-radius: 12px;">${config.label}</span>
+                                <span style="font-size: 13px; color: #999;">${entry.hora}</span>
+                              </div>
+
+                              <div style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 5px;">
+                                ${tipoRacionConfig ? tipoRacionConfig.icono : ''} ${entry.racion.nombre}
+                              </div>
+
+                              <div style="font-size: 14px; color: #666; margin-bottom: 5px;">
+                                Tipo: ${entry.racion.tipo} • Caducidad: ${entry.racion.caducidad}
+                              </div>
+
+                              ${entry.tipo === 'modificar' && entry.cambios ? `
+                                <div style="margin-top: 10px; padding: 10px; background: white; border-radius: 8px; font-size: 13px;">
+                                  <div style="color: #666; margin-bottom: 5px;"><strong>Cambios realizados:</strong></div>
+                                  ${entry.cambios.antes.nombre !== entry.cambios.despues.nombre ? `
+                                    <div style="color: #555;">
+                                      Nombre: <span style="text-decoration: line-through; color: #999;">${entry.cambios.antes.nombre}</span> → <strong>${entry.cambios.despues.nombre}</strong>
+                                    </div>
+                                  ` : ''}
+                                  ${entry.cambios.antes.caducidad !== entry.cambios.despues.caducidad ? `
+                                    <div style="color: #555;">
+                                      Caducidad: <span style="text-decoration: line-through; color: #999;">${entry.cambios.antes.caducidad}</span> → <strong>${entry.cambios.despues.caducidad}</strong>
+                                    </div>
+                                  ` : ''}
+                                </div>
+                              ` : ''}
+                            </div>
+                          </div>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
       </div>
     </div>
   `;

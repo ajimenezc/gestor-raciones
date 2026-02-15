@@ -2,6 +2,7 @@
 let state = {
   screen: 'main',
   raciones: [],
+  racionesHistorico: [],
   tempRaciones: [],
   selectedRaciones: [],
   counts: {},
@@ -18,6 +19,7 @@ function loadData() {
     try {
       const data = JSON.parse(stored);
       state.raciones = data.raciones || [];
+      state.racionesHistorico = data.racionesHistorico || [];
     } catch (e) {
       console.error('Error loading data:', e);
     }
@@ -25,7 +27,8 @@ function loadData() {
 }
 
 // Guardar datos
-function saveData(raciones) {
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ raciones }));
+function saveData(raciones, racionesHistorico = state.racionesHistorico) {
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ raciones, racionesHistorico }));
   state.raciones = raciones;
+  state.racionesHistorico = racionesHistorico;
 }
