@@ -64,7 +64,7 @@ function renderMain() {
               ${chartData.map(([tipo, count]) => `
                 <div class="bar-item">
                   <div class="bar" style="height: ${(count / maxCount) * 150}px;">${count}</div>
-                  <div class="bar-label">${tipo}</div>
+                  <div class="bar-label">${escapeHtml(tipo)}</div>
                 </div>
               `).join('')}
             </div>
@@ -122,11 +122,11 @@ function renderRegistrar() {
               <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: #f9f9f9; border-radius: 10px; margin-bottom: 10px;">
                 <div style="font-size: 28px; flex-shrink: 0;">${config.icono}</div>
                 <div style="flex: 1;">
-                  <input type="text" value="${racion.nombre}" onchange="updateRacionNombre(${index}, this.value)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; width: 100%; margin-bottom: 5px;">
+                  <input type="text" value="${escapeHtml(racion.nombre)}" onchange="updateRacionNombre(${index}, this.value)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; width: 100%; margin-bottom: 5px;">
                   <div style="margin-bottom: 5px;">
                     <label style="font-size: 14px; color: #666; display: flex; align-items: center;">
                       Caduca en:
-                      <input type="number" value="${racion.caducidad}" onchange="updateRacionCaducidad(${index}, this.value)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; width: 70px; margin-left: 8px;">
+                      <input type="number" value="${escapeHtml(racion.caducidad)}" onchange="updateRacionCaducidad(${index}, this.value)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; width: 70px; margin-left: 8px;">
                       días
                     </label>
                   </div>
@@ -188,10 +188,10 @@ function renderConsumir() {
                     const isNearExpiry = daysLeft <= 2 && daysLeft >= 0;
 
                     return `
-                      <button onclick="selectRacion('${racion.id}')" style="width: 100%; padding: 15px; background: ${isExpired ? '#ffe0e0' : isNearExpiry ? '#fff4e0' : '#f9f9f9'}; border: 2px solid ${isExpired ? '#ff4444' : isNearExpiry ? '#ff9944' : 'transparent'}; border-radius: 10px; cursor: pointer; margin-bottom: 10px; text-align: left;">
-                        <div style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 5px;">${racion.nombre}</div>
+                      <button onclick="selectRacion('${sanitizeId(racion.id)}')" style="width: 100%; padding: 15px; background: ${isExpired ? '#ffe0e0' : isNearExpiry ? '#fff4e0' : '#f9f9f9'}; border: 2px solid ${isExpired ? '#ff4444' : isNearExpiry ? '#ff9944' : 'transparent'}; border-radius: 10px; cursor: pointer; margin-bottom: 10px; text-align: left;">
+                        <div style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 5px;">${escapeHtml(racion.nombre)}</div>
                         <div style="font-size: 14px; color: #666;">
-                          Caduca: ${racion.caducidad}
+                          Caduca: ${escapeHtml(racion.caducidad)}
                           ${isExpired ? ' (caducada)' : ''}
                           ${isNearExpiry ? ` (${daysLeft} días)` : ''}
                         </div>
@@ -215,8 +215,8 @@ function renderConsumir() {
               <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: #f9f9f9; border-radius: 10px; margin-bottom: 10px;">
                 <div style="font-size: 28px; flex-shrink: 0;">${config.icono}</div>
                 <div style="flex: 1;">
-                  <div style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 5px;">${racion.nombre}</div>
-                  <div style="font-size: 13px; color: #666;">Caduca: ${racion.caducidad} • ${config.ubicacion}</div>
+                  <div style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 5px;">${escapeHtml(racion.nombre)}</div>
+                  <div style="font-size: 13px; color: #666;">Caduca: ${escapeHtml(racion.caducidad)} • ${config.ubicacion}</div>
                 </div>
                 <button onclick="removeSelectedRacion(${index})" style="background: #ff4444; color: white; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 18px; cursor: pointer; flex-shrink: 0;">✕</button>
               </div>
@@ -272,10 +272,10 @@ function renderVer() {
                         const isNearExpiry = daysLeft <= 2 && daysLeft >= 0;
 
                         return `
-                          <div onclick="selectRacionToEdit('${racion.id}')" style="padding: 15px; background: ${isExpired ? '#ffe0e0' : isNearExpiry ? '#fff4e0' : '#f9f9f9'}; border-radius: 10px; border-left: 4px solid ${isExpired ? '#ff4444' : isNearExpiry ? '#ff9944' : '#667eea'}; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-                            <div style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 5px;">${racion.nombre}</div>
+                          <div onclick="selectRacionToEdit('${sanitizeId(racion.id)}')" style="padding: 15px; background: ${isExpired ? '#ffe0e0' : isNearExpiry ? '#fff4e0' : '#f9f9f9'}; border-radius: 10px; border-left: 4px solid ${isExpired ? '#ff4444' : isNearExpiry ? '#ff9944' : '#667eea'}; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                            <div style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 5px;">${escapeHtml(racion.nombre)}</div>
                             <div style="font-size: 14px; color: #666; margin-bottom: 3px;">
-                              Caduca: ${racion.caducidad}
+                              Caduca: ${escapeHtml(racion.caducidad)}
                               ${isExpired ? ' ❌' : ''}
                               ${isNearExpiry ? ` ⚠️ (${daysLeft} días)` : ''}
                             </div>
@@ -305,10 +305,10 @@ function renderVer() {
               <div style="font-size: 28px; flex-shrink: 0;">${config.icono}</div>
               <div style="flex: 1;">
                 <label style="font-size: 14px; color: #666; display: block; margin-bottom: 5px;">Nombre:</label>
-                <input id="edit-nombre" type="text" value="${racion.nombre}" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; width: 100%; margin-bottom: 10px;">
+                <input id="edit-nombre" type="text" value="${escapeHtml(racion.nombre)}" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; width: 100%; margin-bottom: 10px;">
 
                 <label style="font-size: 14px; color: #666; display: block; margin-bottom: 5px;">Fecha de caducidad:</label>
-                <input id="edit-caducidad" type="text" value="${racion.caducidad}" placeholder="DD/MM/AAAA" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; width: 100%; margin-bottom: 5px;">
+                <input id="edit-caducidad" type="text" value="${escapeHtml(racion.caducidad)}" placeholder="DD/MM/AAAA" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; width: 100%; margin-bottom: 5px;">
                 <div style="font-size: 12px; color: #999;">
                   ${daysUntilExpiry >= 0 ? `Faltan ${daysUntilExpiry} días` : `Caducada hace ${Math.abs(daysUntilExpiry)} días`}
                 </div>
@@ -377,7 +377,7 @@ function renderHistorico() {
               ${fechasOrdenadas.map(fecha => `
                 <div style="margin-bottom: 30px;">
                   <h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #667eea; display: flex; align-items: center;">
-                    📅 ${fecha}
+                    📅 ${escapeHtml(fecha)}
                     <span style="font-size: 14px; font-weight: normal; color: #666; margin-left: 10px;">(${historicoAgrupado[fecha].length} operaciones)</span>
                   </h3>
 
@@ -393,15 +393,15 @@ function renderHistorico() {
                             <div style="flex: 1;">
                               <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                                 <span style="font-size: 12px; font-weight: 600; color: white; background: ${config.color}; padding: 4px 10px; border-radius: 12px;">${config.label}</span>
-                                <span style="font-size: 13px; color: #999;">${entry.hora}</span>
+                                <span style="font-size: 13px; color: #999;">${escapeHtml(entry.hora)}</span>
                               </div>
 
                               <div style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 5px;">
-                                ${tipoRacionConfig ? tipoRacionConfig.icono : ''} ${entry.racion.nombre}
+                                ${tipoRacionConfig ? tipoRacionConfig.icono : ''} ${escapeHtml(entry.racion.nombre)}
                               </div>
 
                               <div style="font-size: 14px; color: #666; margin-bottom: 5px;">
-                                Tipo: ${entry.racion.tipo} • Caducidad: ${entry.racion.caducidad}
+                                Tipo: ${escapeHtml(entry.racion.tipo)} • Caducidad: ${escapeHtml(entry.racion.caducidad)}
                               </div>
 
                               ${entry.tipo === 'modificar' && entry.cambios ? `
@@ -409,12 +409,12 @@ function renderHistorico() {
                                   <div style="color: #666; margin-bottom: 5px;"><strong>Cambios realizados:</strong></div>
                                   ${entry.cambios.antes.nombre !== entry.cambios.despues.nombre ? `
                                     <div style="color: #555;">
-                                      Nombre: <span style="text-decoration: line-through; color: #999;">${entry.cambios.antes.nombre}</span> → <strong>${entry.cambios.despues.nombre}</strong>
+                                      Nombre: <span style="text-decoration: line-through; color: #999;">${escapeHtml(entry.cambios.antes.nombre)}</span> → <strong>${escapeHtml(entry.cambios.despues.nombre)}</strong>
                                     </div>
                                   ` : ''}
                                   ${entry.cambios.antes.caducidad !== entry.cambios.despues.caducidad ? `
                                     <div style="color: #555;">
-                                      Caducidad: <span style="text-decoration: line-through; color: #999;">${entry.cambios.antes.caducidad}</span> → <strong>${entry.cambios.despues.caducidad}</strong>
+                                      Caducidad: <span style="text-decoration: line-through; color: #999;">${escapeHtml(entry.cambios.antes.caducidad)}</span> → <strong>${escapeHtml(entry.cambios.despues.caducidad)}</strong>
                                     </div>
                                   ` : ''}
                                 </div>
@@ -457,7 +457,7 @@ function renderSincronizacion() {
             <div style="font-size: 16px; font-weight: 600; color: #2e7d32; margin-bottom: 10px;">✓ Sincronización activa</div>
             <div style="font-size: 14px; color: #555; margin-bottom: 15px;">Todos tus dispositivos están sincronizados con el código:</div>
             <div style="padding: 15px; background: white; border-radius: 8px; text-align: center; font-family: monospace; font-size: 20px; font-weight: bold; color: #667eea; margin-bottom: 15px;">
-              ${state.syncCode}
+              ${escapeHtml(state.syncCode)}
             </div>
             <div style="font-size: 13px; color: #666; text-align: center; margin-bottom: 15px;">
               Comparte este código con tu familia para que vean la misma despensa

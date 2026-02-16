@@ -1,4 +1,22 @@
 // Utilidades
+
+// Escape HTML para prevenir XSS en contenido y atributos HTML
+const escapeHtml = (str) => {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
+// Sanitizar IDs para uso seguro dentro de onclick="fn('...')"
+// Solo permite caracteres seguros (alfanuméricos, punto, guion, guion bajo)
+const sanitizeId = (id) => {
+  return String(id).replace(/[^a-zA-Z0-9._\-]/g, '');
+};
+
 const parseDate = (dateStr) => {
   const [day, month, year] = dateStr.split('/').map(Number);
   return new Date(year, month - 1, day);

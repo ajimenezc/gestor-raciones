@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tests - DespensaBoy</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 30px; background: #f5f5f5; }
+    h1 { margin-bottom: 20px; color: #333; }
+    .suite { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .suite h2 { font-size: 18px; color: #555; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+    .test { padding: 8px 12px; margin-bottom: 4px; border-radius: 6px; font-size: 14px; font-family: monospace; }
+    .pass { background: #e8f5e9; color: #2e7d32; }
+    .fail { background: #ffebee; color: #c62828; }
+    .summary { font-size: 20px; font-weight: bold; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 20px; }
+    .summary.all-pass { background: #e8f5e9; color: #2e7d32; }
+    .summary.has-fail { background: #ffebee; color: #c62828; }
+  </style>
+</head>
+<body>
+  <h1>DespensaBoy Tests</h1>
+  <div id="summary" class="summary"></div>
+  <div id="results"></div>
+
+  <!-- Cargar solo lo necesario para los tests -->
+  <script src="../js/constants.js"></script>
+  <script src="../js/utils.js"></script>
+
+  <script>
+    // Mini test runner
+    let totalPass = 0;
+    let totalFail = 0;
+    const results = document.getElementById('results');
+
+    function suite(name, fn) {
+      const div = document.createElement('div');
+      div.className = 'suite';
+      div.innerHTML = `<h2>${name}</h2>`;
+      results.appendChild(div);
+      fn((testName, fn) => {
+        const el = document.createElement('div');
+        try {
+          fn();
+          el.className = 'test pass';
+          el.textContent = `PASS  ${testName}`;
+          totalPass++;
+        } catch (e) {
+          el.className = 'test fail';
+          el.textContent = `FAIL  ${testName} — ${e.message}`;
+          totalFail++;
+        }
+        div.appendChild(el);
+      });
+    }
+
+    function assert(condition, msg) {
+      if (!condition) throw new Error(msg || 'Assertion failed');
+    }
+
+    function assertEqual(actual, expected, msg) {
+      if (actual !== expected) {
+        throw new Error(
+          (msg ? msg + ': ' : '') +
+          `expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`
+        );
+      }
+    }
+
+    // ========================================
+    // Tests
+    // ========================================
+
+    suite('escapeHtml', (test) => {
+      test('escapa script tags', () => {
+        const input = '<scr' + 'ipt>alert("xss")<\/scr' + 'ipt>';
+        const expected = '&lt;scr' + 'ipt&gt;alert(&quot;xss&quot;)&lt;/scr' + 'ipt&gt;';
+        assertEqual(escapeHtml(input), expected);
+      });
+
+      test('escapa comillas dobles', () => {
+        assertEqual(escapeHtml('a"b'), 'a&quot;b');
+      });
+
+      test('escapa comillas simples', () => {
+        assertEqual(escapeHtml("a'b"), 'a&#39;b');
+      });
+
+      test('escapa ampersand', () => {
+        assertEqual(escapeHtml('a&b'), 'a&amp;b');
+      });
+
+      test('escapa < y >', () => {
+        assertEqual(escapeHtml('a<b>c'), 'a&lt;b&gt;c');
+      });
+
+      test('devuelve string vacio para null', () => {
+        assertEqual(escapeHtml(null), '');
+      });
+
+      test('devuelve string vacio para undefined', () => {
+        assertEqual(escapeHtml(undefined), '');
+      });
+
+      test('convierte numeros a string', () => {
+        assertEqual(escapeHtml(42), '42');
+      });
+
+      test('no modifica texto seguro', () => {
+        assertEqual(escapeHtml('Pollo asado'), 'Pollo asado');
+      });
+
+      test('escapa payload XSS tipico en atributo onclick', () => {
+        const payload = "'); alert('xss";
+        const escaped = escapeHtml(payload);
+        assert(!escaped.includes("'"), 'no debe contener comillas simples sin escapar');
+        assertEqual(escaped, '&#39;); alert(&#39;xss');
+      });
+
+      test('escapa payload XSS en atributo value', () => {
+        const payload = '"><img src=x onerror=alert(1)>';
+        const escaped = escapeHtml(payload);
+        assert(!escaped.includes('"'), 'no debe contener comillas dobles sin escapar');
+        assert(!escaped.includes('<'), 'no debe contener < sin escapar');
+      });
+
+      test('maneja string con todos los caracteres especiales', () => {
+        assertEqual(
+          escapeHtml('&<>"\''),
+          '&amp;&lt;&gt;&quot;&#39;'
+        );
+      });
+    });
+
+    suite('sanitizeId', (test) => {
+      test('mantiene IDs validos sin cambios', () => {
+        assertEqual(sanitizeId('1708234567890-0.123456789'), '1708234567890-0.123456789');
+      });
+
+      test('elimina comillas simples', () => {
+        assertEqual(sanitizeId("id'inject"), 'idinject');
+      });
+
+      test('elimina comillas dobles', () => {
+        assertEqual(sanitizeId('id"inject'), 'idinject');
+      });
+
+      test('elimina parentesis y punto y coma', () => {
+        assertEqual(sanitizeId("id');alert('xss"), 'idalertxss');
+      });
+
+      test('elimina tags HTML', () => {
+        assertEqual(sanitizeId('id<scr' + 'ipt>'), 'idscript');
+      });
+
+      test('mantiene alfanumericos, punto, guion, guion bajo', () => {
+        assertEqual(sanitizeId('abc-123_456.789'), 'abc-123_456.789');
+      });
+
+      test('elimina espacios', () => {
+        assertEqual(sanitizeId('id con espacios'), 'idconespacios');
+      });
+
+      test('convierte numeros a string', () => {
+        assertEqual(sanitizeId(12345), '12345');
+      });
+    });
+
+    suite('parseDate', (test) => {
+      test('parsea fecha DD/MM/AAAA correctamente', () => {
+        const date = parseDate('15/06/2025');
+        assertEqual(date.getDate(), 15);
+        assertEqual(date.getMonth(), 5); // 0-indexed
+        assertEqual(date.getFullYear(), 2025);
+      });
+
+      test('parsea primer dia del ano', () => {
+        const date = parseDate('01/01/2026');
+        assertEqual(date.getDate(), 1);
+        assertEqual(date.getMonth(), 0);
+        assertEqual(date.getFullYear(), 2026);
+      });
+
+      test('parsea ultimo dia del ano', () => {
+        const date = parseDate('31/12/2025');
+        assertEqual(date.getDate(), 31);
+        assertEqual(date.getMonth(), 11);
+      });
+    });
+
+    suite('formatDate', (test) => {
+      test('formatea fecha a DD/MM/AAAA', () => {
+        const date = new Date(2025, 5, 15); // 15 junio 2025
+        assertEqual(formatDate(date), '15/06/2025');
+      });
+
+      test('anade ceros a dia y mes', () => {
+        const date = new Date(2025, 0, 5); // 5 enero 2025
+        assertEqual(formatDate(date), '05/01/2025');
+      });
+
+      test('roundtrip parseDate -> formatDate', () => {
+        const original = '07/03/2025';
+        assertEqual(formatDate(parseDate(original)), original);
+      });
+    });
+
+    suite('addDays', (test) => {
+      test('anade dias correctamente', () => {
+        const date = new Date(2025, 0, 1);
+        const result = addDays(date, 10);
+        assertEqual(result.getDate(), 11);
+      });
+
+      test('cruza mes correctamente', () => {
+        const date = new Date(2025, 0, 28); // 28 enero
+        const result = addDays(date, 5);
+        assertEqual(result.getMonth(), 1); // febrero
+        assertEqual(result.getDate(), 2);
+      });
+
+      test('no modifica la fecha original', () => {
+        const date = new Date(2025, 0, 1);
+        addDays(date, 10);
+        assertEqual(date.getDate(), 1);
+      });
+    });
+
+    suite('getDaysUntilExpiry', (test) => {
+      test('devuelve 0 para hoy', () => {
+        const today = formatDate(new Date());
+        assertEqual(getDaysUntilExpiry(today), 0);
+      });
+
+      test('devuelve negativo para fecha pasada', () => {
+        const past = formatDate(addDays(new Date(), -5));
+        assertEqual(getDaysUntilExpiry(past), -5);
+      });
+
+      test('devuelve positivo para fecha futura', () => {
+        const future = formatDate(addDays(new Date(), 10));
+        assertEqual(getDaysUntilExpiry(future), 10);
+      });
+    });
+
+    suite('limpiarHistoricoAutomatico', (test) => {
+      test('no modifica historico pequeno', () => {
+        const historico = [{ id: '1' }, { id: '2' }];
+        const { limpio, eliminadas } = limpiarHistoricoAutomatico(historico);
+        assertEqual(limpio.length, 2);
+        assertEqual(eliminadas, 0);
+      });
+
+      test('recorta historico que excede el maximo', () => {
+        const historico = Array.from({ length: 200 }, (_, i) => ({ id: String(i) }));
+        const { limpio, eliminadas } = limpiarHistoricoAutomatico(historico);
+        assertEqual(limpio.length, MAX_ENTRADAS_HISTORICO);
+        assertEqual(eliminadas, 200 - MAX_ENTRADAS_HISTORICO);
+      });
+
+      test('mantiene las primeras entradas (mas recientes)', () => {
+        const historico = Array.from({ length: 200 }, (_, i) => ({ id: String(i) }));
+        const { limpio } = limpiarHistoricoAutomatico(historico);
+        assertEqual(limpio[0].id, '0');
+      });
+
+      test('maneja array vacio', () => {
+        const { limpio, eliminadas } = limpiarHistoricoAutomatico([]);
+        assertEqual(limpio.length, 0);
+        assertEqual(eliminadas, 0);
+      });
+
+      test('maneja null', () => {
+        const { limpio, eliminadas } = limpiarHistoricoAutomatico(null);
+        assertEqual(limpio, null);
+        assertEqual(eliminadas, 0);
+      });
+    });
+
+    // Mostrar resumen
+    const summary = document.getElementById('summary');
+    const total = totalPass + totalFail;
+    if (totalFail === 0) {
+      summary.className = 'summary all-pass';
+      summary.textContent = `${totalPass}/${total} tests pasados`;
+    } else {
+      summary.className = 'summary has-fail';
+      summary.textContent = `${totalFail} FALLOS de ${total} tests`;
+    }
+  </script>
+</body>
+</html>
