@@ -3,7 +3,7 @@
 // Obtén estas credenciales en: https://supabase.com/dashboard/project/_/settings/api
 
 const SUPABASE_URL = 'https://nbwupfaryhheigvvbxyj.supabase.co'; // Ej: https://abcdefghijklmnop.supabase.co
-const SUPABASE_ANON_KEY = 'sb_publishable_RDi-ZBfJdDcXPmb3mTwrcQ_ivQZsTD0'; // Tu clave anónima pública
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5id3VwZmFyeWhoZWlndnZieHlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExNzMzMTQsImV4cCI6MjA4Njc0OTMxNH0.2IUz7WQPWT7CWAH1iFvH-4odh5nn37FiUKwosrQZazA'; // Tu clave anónima pública
 
 // Cloudflare Turnstile Site Key (pública, obtén de https://dash.cloudflare.com)
 const TURNSTILE_SITE_KEY = '0x4AAAAAACdWgEGwJTD3TpYV';
