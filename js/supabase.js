@@ -43,19 +43,28 @@ async function obtenerTokenTurnstile() {
       return;
     }
 
-    // Crear contenedor temporal para el widget
-    const container = document.createElement('div');
-    container.id = 'turnstile-widget-' + Date.now();
-    document.body.appendChild(container);
+    // Buscar o crear contenedor para Turnstile
+    let container = document.getElementById('cf-turnstile-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'cf-turnstile-container';
+      container.style.position = 'fixed';
+      container.style.top = '-9999px';
+      container.style.left = '-9999px';
+      document.body.appendChild(container);
+    }
 
+    // Limpiar renderizados anteriores
+    container.innerHTML = '';
+
+    // Renderizar Turnstile
     turnstile.render(container, {
       sitekey: TURNSTILE_SITE_KEY,
       callback: (token) => {
-        document.body.removeChild(container);
         resolve(token);
       },
-      'error-callback': () => {
-        document.body.removeChild(container);
+      'error-callback': (error) => {
+        console.error('Turnstile error:', error);
         reject(new Error('Error al verificar CAPTCHA'));
       },
     });
