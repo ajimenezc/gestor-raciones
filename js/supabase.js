@@ -92,10 +92,12 @@ async function obtenerTokenTurnstile() {
 let syncHideTimer = null;
 function mostrarSyncEstado(estado) {
   const el = document.getElementById('sync-indicator');
+  const overlay = document.getElementById('sync-overlay');
   if (!el) return;
   clearTimeout(syncHideTimer);
   el.className = 'visible ' + estado;
   el.textContent = estado === 'success' ? '\u2713' : estado === 'error' ? '\u2717' : '';
+  if (overlay) overlay.className = estado === 'syncing' ? 'active' : '';
   if (estado !== 'syncing') {
     syncHideTimer = setTimeout(() => { el.className = ''; }, 2500);
   }
