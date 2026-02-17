@@ -35,14 +35,23 @@ function generarCodigoFamiliar() {
   return codigo;
 }
 
-// Obtener token de Turnstile
-async function obtenerTokenTurnstile() {
+// Esperar a que Turnstile cargue (max 10s)
+function esperarTurnstile(timeout = 10000) {
   return new Promise((resolve, reject) => {
-    if (typeof turnstile === 'undefined') {
-      reject(new Error('Turnstile no está cargado'));
-      return;
-    }
+    if (typeof turnstile !== 'undefined') { resolve(); return; }
+    const start = Date.now();
+    const interval = setInterval(() => {
+      if (typeof turnstile !== 'undefined') { clearInterval(interval); resolve(); }
+      else if (Date.now() - start > timeout) { clearInterval(interval); reject(new Error('Turnstile no cargó a tiempo')); }
+    }, 200);
+  });
+}
 
+// Obtener token de Turnstile (con timeout y espera de carga)
+async function obtenerTokenTurnstile() {
+  await esperarTurnstile();
+
+  return new Promise((resolve, reject) => {
     // Buscar o crear contenedor para Turnstile
     let container = document.getElementById('cf-turnstile-container');
     if (!container) {
@@ -57,19 +66,43 @@ async function obtenerTokenTurnstile() {
     // Limpiar renderizados anteriores
     container.innerHTML = '';
 
+    // Timeout: si Turnstile no responde en 15s, rechazar
+    const timeout = setTimeout(() => {
+      console.error('Turnstile timeout (15s sin respuesta)');
+      reject(new Error('Turnstile timeout'));
+    }, 15000);
+
     // Renderizar Turnstile
     turnstile.render(container, {
       sitekey: TURNSTILE_SITE_KEY,
       callback: (token) => {
+        clearTimeout(timeout);
         resolve(token);
       },
       'error-callback': (error) => {
+        clearTimeout(timeout);
         console.error('Turnstile error:', error);
-        reject(new Error('Error al verificar CAPTCHA'));
+        reject(new Error('Error CAPTCHA: ' + error));
       },
     });
   });
 }
+
+// Indicador visual de sincronización
+let syncHideTimer = null;
+function mostrarSyncEstado(estado) {
+  const el = document.getElementById('sync-indicator');
+  if (!el) return;
+  clearTimeout(syncHideTimer);
+  el.className = 'visible ' + estado;
+  el.textContent = estado === 'success' ? '\u2713' : estado === 'error' ? '\u2717' : '';
+  if (estado !== 'syncing') {
+    syncHideTimer = setTimeout(() => { el.className = ''; }, 2500);
+  }
+}
+
+// Cola de sincronización para evitar llamadas concurrentes
+let syncEnCurso = null;
 
 // Crear nueva despensa con código (CON TURNSTILE)
 async function crearDespensaConCodigo() {
@@ -128,45 +161,64 @@ async function conectarConCodigo(codigo) {
 }
 
 // Sincronizar datos locales CON Supabase (SUBIR datos) - CON TURNSTILE
+// Usa cola para evitar llamadas concurrentes que rompen Turnstile
 async function sincronizarConSupabase(codigo) {
-  try {
-    // 1. Obtener token de Turnstile
-    const captchaToken = await obtenerTokenTurnstile();
-
-    // 2. Llamar a Edge Function
-    const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/actualizar-despensa`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          captchaToken,
-          codigo,
-          raciones: state.raciones,
-          historico: state.racionesHistorico,
-        }),
-      }
-    );
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      console.error('Error sincronizando:', result.error);
-      return false;
-    }
-
-    // Guardar timestamp local para evitar loops
-    const timestamp = result.data.updated_at;
-    localStorage.setItem('last_update_timestamp', timestamp);
-
-    return true;
-  } catch (error) {
-    console.error('Error sincronizando:', error);
-    return false;
+  // Si ya hay un sync en curso, esperar a que termine y usar los datos más recientes
+  if (syncEnCurso) {
+    console.log('⏳ Sync en cola, esperando al anterior...');
+    try { await syncEnCurso; } catch (e) { /* ignorar error del anterior */ }
   }
+
+  const syncPromise = (async () => {
+    mostrarSyncEstado('syncing');
+    try {
+      // 1. Obtener token de Turnstile
+      const captchaToken = await obtenerTokenTurnstile();
+
+      // 2. Llamar a Edge Function (usa state actual, no el capturado antes)
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/actualizar-despensa`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            captchaToken,
+            codigo,
+            raciones: state.raciones,
+            historico: state.racionesHistorico,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('Error sincronizando:', result.error);
+        mostrarSyncEstado('error');
+        return false;
+      }
+
+      // Guardar timestamp local para evitar loops
+      const timestamp = result.data.updated_at;
+      localStorage.setItem('last_update_timestamp', timestamp);
+      console.log('✅ Sync completado, timestamp:', timestamp);
+      mostrarSyncEstado('success');
+
+      return true;
+    } catch (error) {
+      console.error('Error sincronizando:', error);
+      mostrarSyncEstado('error');
+      return false;
+    } finally {
+      syncEnCurso = null;
+    }
+  })();
+
+  syncEnCurso = syncPromise;
+  return syncPromise;
 }
 
 // Sincronizar datos DESDE Supabase (DESCARGAR datos)
